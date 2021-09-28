@@ -3,8 +3,9 @@ import { CoursesController } from './courses.controller';
 import { CoursesService } from './courses.service';
 import { Course } from './course.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Tag } from './tag.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([Course])],
+  imports: [TypeOrmModule.forFeature([Course, Tag])],
   controllers: [CoursesController],
   providers: [CoursesService],
 })

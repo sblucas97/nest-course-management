@@ -5,20 +5,26 @@ import { Repository } from 'typeorm';
 import { Course } from './course.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { Tag } from './tag.entity';
 
 @Injectable()
 export class CoursesService {
   constructor(
     @InjectRepository(Course)
     private courseRepository: Repository<Course>,
+
+    @InjectRepository(Tag)
+    private tagRepository: Repository<Tag>,
   ) {}
 
   async findAll(): Promise<Course[]> {
-    return await this.courseRepository.find();
+    return await this.courseRepository.find({ relations: ['tags'] });
   }
 
   async findOne(id: string): Promise<Course> {
-    const course = await this.courseRepository.findOne(id);
+    const course = await this.courseRepository.findOne(id, {
+      relations: ['tags'],
+    });
 
     if (!course) {
       throw new NotFoundException(`Course ID ${id} not found`);
@@ -28,15 +34,24 @@ export class CoursesService {
   }
 
   async create(createCourseDto: CreateCourseDto): Promise<Course> {
-    const course = this.courseRepository.create(createCourseDto);
+    const tags = await Promise.all(
+      createCourseDto.tags.map((name) => this.preloadTagByName(name)),
+    );
+
+    const course = this.courseRepository.create({ ...createCourseDto, tags });
 
     return await this.courseRepository.save(course);
   }
 
   async update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course> {
+    const tags = await Promise.all(
+      updateCourseDto.tags.map((name) => this.preloadTagByName(name)),
+    );
+
     const course = await this.courseRepository.preload({
       id,
       ...updateCourseDto,
+      tags,
     });
 
     if (!course) {
@@ -50,5 +65,15 @@ export class CoursesService {
     const course = await this.findOne(id);
 
     return this.courseRepository.remove(course);
+  }
+
+  private async preloadTagByName(name: string): Promise<Tag> {
+    const tag = await this.tagRepository.findOne({ name });
+
+    if (tag) {
+      return tag;
+    }
+
+    return await this.tagRepository.create({ name });
   }
 }
