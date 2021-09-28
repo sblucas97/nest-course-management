@@ -30,7 +30,6 @@ export class CoursesService {
   }
 
   create(createCourseDto: any): void {
-    console.log(createCourseDto);
     this.courses.push(createCourseDto);
   }
 
